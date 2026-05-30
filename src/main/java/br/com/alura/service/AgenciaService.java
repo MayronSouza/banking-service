@@ -6,6 +6,7 @@ import br.com.alura.domain.http.SituacaoCadastral;
 import br.com.alura.exception.AgenciaNaoAtivaOuNaoEncontrada;
 import br.com.alura.repository.AgenciaRepository;
 import br.com.alura.service.http.SituacaoCadastralHttpService;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -29,8 +30,10 @@ public class AgenciaService {
         AgenciaHttp agenciaHttp = situacaoCadastralHttpService.buscarPorCnpj(agencia.getCnpj());
 
         if(agenciaHttp != null && agenciaHttp.getSituacaoCadastral().equals(SituacaoCadastral.ATIVO)) {
+            Log.info("A agência com CNPJ " + agencia.getCnpj() + " foi cadastrada.");
             agenciaRepository.persist(agencia);
         } else {
+            Log.info("A agência com CNPJ " + agencia.getCnpj() + " não foi cadastrada.");
             throw new AgenciaNaoAtivaOuNaoEncontrada();
         }
     }
@@ -44,10 +47,12 @@ public class AgenciaService {
     }
 
     public void deletar(Long id) {
+        Log.info("A agência com ID " + id + " foi deletada.");
         agenciaRepository.deleteById(id);
     }
 
     public void alterar(Agencia agencia) {
+        Log.info("A agência com CNPJ " + agencia.getCnpj() + " foi alterada.");
         agenciaRepository.update("nome = ?1, razaoSocial = ?2, cnpj = ?3 where id = ?4",
                 agencia.getNome(),
                 agencia.getRazaoSocial(),
