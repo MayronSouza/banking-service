@@ -7,6 +7,7 @@ import br.com.alura.domain.http.SituacaoCadastral;
 import br.com.alura.exception.AgenciaNaoAtivaOuNaoEncontrada;
 import br.com.alura.repository.AgenciaRepository;
 import br.com.alura.service.http.SituacaoCadastralHttpService;
+import br.com.alura.utils.AgenciaFixture;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -14,6 +15,8 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
+import static br.com.alura.utils.AgenciaFixture.criarAgenciaHttp;
 
 @QuarkusTest
 public class AgenciaServiceTest {
@@ -30,7 +33,7 @@ public class AgenciaServiceTest {
 
     @Test
     public void deveNaoCadastrarQuandoClientRetornarNull() {
-        Agencia agencia = criarAgencia();
+        Agencia agencia = AgenciaFixture.criarAgencia();
 
         Mockito.when(situacaoCadastralHttpService.buscarPorCnpj("123")).thenReturn(null);
 
@@ -40,23 +43,26 @@ public class AgenciaServiceTest {
     }
 
     @Test
+    public void deveNaoCadastrarQuandoClientRetornarSituacaoCadastralInativo() {
+        Agencia agencia = AgenciaFixture.criarAgencia();
+        AgenciaHttp agenciaHttp = AgenciaFixture.criarAgenciaHttp(SituacaoCadastral.INATIVO);
+
+        Mockito.when(situacaoCadastralHttpService.buscarPorCnpj("123")).thenReturn(agenciaHttp);
+
+        Assertions.assertThrows(AgenciaNaoAtivaOuNaoEncontrada.class, () -> agenciaService.cadastrar(agencia));
+
+        Mockito.verify(agenciaRepository, Mockito.never()).persist(agencia);
+    }
+
+    @Test
     public void deveCadastrarQuandoClientRetornarSituacaoCadastralAtiva() {
-        Agencia agencia = criarAgencia();
-        AgenciaHttp agenciaHttp = criarAgenciaHttp();
+        Agencia agencia = AgenciaFixture.criarAgencia();
+        AgenciaHttp agenciaHttp = AgenciaFixture.criarAgenciaHttp(SituacaoCadastral.ATIVO);
 
         Mockito.when(situacaoCadastralHttpService.buscarPorCnpj("123")).thenReturn(agenciaHttp);
 
         agenciaService.cadastrar(agencia);
 
         Mockito.verify(agenciaRepository).persist(agencia);
-    }
-
-    private AgenciaHttp criarAgenciaHttp() {
-        return new AgenciaHttp("Agencia Test", "Razão Agencia Test", "123", SituacaoCadastral.ATIVO);
-    }
-
-    private Agencia criarAgencia() {
-        Endereco endereco = new Endereco(1, "Rua 2","Quadra Test","Travessa Test", 1);
-        return new Agencia(1,"Agencia Test", "Razão Agencia Test","123", endereco);
     }
 }
